@@ -23,6 +23,16 @@ def init_db():
         )
     ''') # Step 3: Execute the SQL command to create the 'coupons' table
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            name TEXT UNIQUE NOT NULL, 
+            price REAL NOT NULL,
+            category TEXT NOT NULL,
+            image TEXT NOT NULL
+        )
+""")
+
     # Id will always be PRIMARY KEY and AUTOINCREMENT, meaning it will be unique and automatically incremented for each new entry
     connection.commit() # Step 3: Saves the changes to the database
     connection.close() # Step 4: Closes the connection to the database
@@ -56,6 +66,82 @@ def create_coupon():
         'success': True,
         'message': 'Coupon created successfully'
     }), 201 # CREATED
+
+
+# GET /api/coupons -> Get all records in the coupons table
+@app.get('/api/coupons')
+def get_coupons():
+    connection = sqlite3.connect(DB_NAME)
+
+    # Makes each row behave like a dictionary
+    connection.row_factory = sqlite3.Row
+
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM coupons")
+
+    # Fetchall retrieves all the rows from the result of the query
+    coupon_db = cursor.fetchall()
+
+    connection.close()
+
+    coupons_list = []
+
+    for coupon in coupon_db:
+        print(coupon)
+        coupons_list.append(dict(coupon))
+
+    return jsonify({
+        "Success": True,
+        "Message": "Coupons retrieved successfully",
+        "Data": coupons_list
+    })
+
+# GET /api/coupons/<2> -> Retrive a single coupon by id using a path parameter
+@app.get("/api/coupons/<int:coupon_id>")
+def get_coupon_by_id(coupon_id):
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row 
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM coupons WHERE id = ?", (coupon_id))
+    coupon_db = cursor.fetchone
+    connection.close()
+
+    print(coupon_db)
+    coupon = dict(coupon_db)
+
+    return jsonify({
+        "Success" : True, 
+        "Message" : "Coupon retrieved successfully",
+        "Data" : coupon
+    }), 200
+
+
+# ---- Products ---- 
+# POST /api/products 
+@app.post("/api/products")
+def create_product():
+    new_product = request.get_json()
+
+    product_name = new_product["name"]
+    product_price = new_product["price"]
+    product_category = new_product["category"]
+
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO products (name, price, category)
+        VALUES (?, ?, ?)
+    """, (product_name, product_price, product_category))
+
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True,
+        "Message": "Product created successfully"
+    }), 201
 
 
 init_db() # Call the function to initialize the database tables
