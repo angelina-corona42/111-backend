@@ -97,6 +97,7 @@ def get_coupons():
         "Data": coupons_list
     })
 
+
 # GET /api/coupons/<2> -> Retrive a single coupon by id using a path parameter
 @app.get("/api/coupons/<int:coupon_id>")
 def get_coupon_by_id(coupon_id):
@@ -115,7 +116,6 @@ def get_coupon_by_id(coupon_id):
         "Message" : "Coupon retrieved successfully",
         "Data" : coupon
     }), 200
-
 
 
 # DELETE /api/coupons 
@@ -232,7 +232,7 @@ def get_products():
         "Data": product_list
     }), 200
 
-# GET  /api/products/<2> -> Return a product by id
+
 # GET /api/products/<id> -> Return a product by id
 @app.get("/api/products/<int:product_id>")
 def get_product_by_id(product_id):
@@ -266,6 +266,73 @@ def get_product_by_id(product_id):
         "Data": product
     }), 200
 
+
+# DELETE /api/products/<products_id>
+@app.delete("/api/products/<int:coupon_id>")
+def delete_by_id(product_id):
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM coupons WHERE id = ?", (product_id,))
+    coupon_db = cursor.fetchone()
+
+    if not coupon_db:
+        connection.close()
+        return jsonify({
+            "Success": False,
+            "Message": "Coupon not found"
+        }), 404
+
+    cursor.execute("DELETE FROM coupons WHERE id = ?", (product_id,))
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True, 
+        "Message" : "Coupon deleted successfully"
+    }), 200
+
+
+# PUT /api/products/<product_id>
+@app.put("/api/products/<int:product_id>")
+def update_product_by_id(product_id):
+    updated_product_name = request.get_json()
+    updated_product_price = request.get_json()
+    updated_product_category = request.get_json()
+    updated_product_image = request.get_json()
+
+    name = updated_product_name["name"]
+    price = updated_product_price["price"]
+    category = updated_product_category["category"]
+    image = updated_product_image["image"]
+
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM coupons WHERE id = ?", (product_id,))
+    coupon_db = cursor.fetchone()
+
+    if not coupon_db:
+        connection.close()
+        return jsonify({
+            "success": False, 
+            "message": "Coupon not found"
+        }), 404
+
+    cursor.execute("""
+        UPDATE coupons
+        SET code = ?, discount = ?
+        WHERE id = ?
+    """, (name, price, category, image, product_id))
+
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True,
+        "Message": "Coupon has been updated successfully"
+    }), 200
 
 
 init_db() # Call the function to initialize the database tables
