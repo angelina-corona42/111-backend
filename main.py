@@ -242,7 +242,7 @@ def get_product_by_id(product_id):
     cursor = connection.cursor()
 
     cursor.execute(
-        "SELECT * FROM products WHERE id = ?",
+        "SELECT * FROM product WHERE id = ?",
         (product_id,)
     )
 
@@ -267,72 +267,84 @@ def get_product_by_id(product_id):
     }), 200
 
 
-# DELETE /api/products/<products_id>
-@app.delete("/api/products/<int:coupon_id>")
+
+# DELETE /api/products/<product_id> -> Delete a product by ID
+@app.delete("/api/products/<int:product_id>")
 def delete_by_id(product_id):
     connection = sqlite3.connect(DB_NAME)
     connection.row_factory = sqlite3.Row
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM coupons WHERE id = ?", (product_id,))
-    coupon_db = cursor.fetchone()
+    # Find the product by ID
+    cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+    product_db = cursor.fetchone()
 
-    if not coupon_db:
+    # Check if the product exists
+    if not product_db:
         connection.close()
         return jsonify({
             "Success": False,
-            "Message": "Coupon not found"
+            "Message": "Product not found"
         }), 404
 
-    cursor.execute("DELETE FROM coupons WHERE id = ?", (product_id,))
-    connection.commit()
-    connection.close()
+    # Delete the product from the database
+    cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
 
-    return jsonify({
-        "Success": True, 
-        "Message" : "Coupon deleted successfully"
-    }), 200
-
-
-# PUT /api/products/<product_id>
-@app.put("/api/products/<int:product_id>")
-def update_product_by_id(product_id):
-    updated_product_name = request.get_json()
-    updated_product_price = request.get_json()
-    updated_product_category = request.get_json()
-    updated_product_image = request.get_json()
-
-    name = updated_product_name["name"]
-    price = updated_product_price["price"]
-    category = updated_product_category["category"]
-    image = updated_product_image["image"]
-
-    connection = sqlite3.connect(DB_NAME)
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT * FROM coupons WHERE id = ?", (product_id,))
-    coupon_db = cursor.fetchone()
-
-    if not coupon_db:
-        connection.close()
-        return jsonify({
-            "success": False, 
-            "message": "Coupon not found"
-        }), 404
-
-    cursor.execute("""
-        UPDATE coupons
-        SET code = ?, discount = ?
-        WHERE id = ?
-    """, (name, price, category, image, product_id))
-
+    # Save changes and close connection
     connection.commit()
     connection.close()
 
     return jsonify({
         "Success": True,
-        "Message": "Coupon has been updated successfully"
+        "Message": "Product deleted successfully"
     }), 200
+
+
+
+# PUT /api/products/<product_id> -> Update a product by ID
+@app.put("/api/products/<int:product_id>")
+def update_product_by_id(product_id):
+
+    # Get JSON data from Thunder Client
+    updated_product = request.get_json()
+
+    name = updated_product["name"]
+    price = updated_product["price"]
+    category = updated_product["category"]
+    image = updated_product["image"]
+
+    # Connect to database
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+
+    # Find the product by ID
+    cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+    product_db = cursor.fetchone()
+
+    # Check if the product exists
+    if not product_db:
+        connection.close()
+        return jsonify({
+            "Success": False,
+            "Message": "Product not found"
+        }), 404
+
+    # Update the product with new information
+    cursor.execute("""
+        UPDATE products
+        SET name = ?, price = ?, category = ?, image = ?
+        WHERE id = ?
+    """, (name, price, category, image, product_id))
+
+    # Save changes and close connection
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True,
+        "Message": "Product has been updated successfully"
+    }), 200
+
 
 
 init_db() # Call the function to initialize the database tables
