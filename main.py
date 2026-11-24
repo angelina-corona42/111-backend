@@ -126,14 +126,20 @@ def create_product():
     product_name = new_product["name"]
     product_price = new_product["price"]
     product_category = new_product["category"]
+    product_image = new_product["image"]
 
     connection = sqlite3.connect(DB_NAME)
     cursor = connection.cursor()
 
     cursor.execute("""
-        INSERT INTO products (name, price, category)
-        VALUES (?, ?, ?)
-    """, (product_name, product_price, product_category))
+        INSERT INTO products (name, price, category, image)
+        VALUES (?, ?, ?, ?)
+    """, (
+        product_name,
+        product_price,
+        product_category,
+        product_image
+    ))
 
     connection.commit()
     connection.close()
