@@ -117,6 +117,67 @@ def get_coupon_by_id(coupon_id):
     }), 200
 
 
+
+# DELETE /api/coupons 
+@app.delete("/api/coupons/<int:coupon_id>")
+def delete_coupon_by_id(coupon_id):
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM coupons WHERE id = ?", (coupon_id,))
+    coupon_db = cursor.fetchone()
+
+    if not coupon_db:
+        connection.close()
+        return jsonify({
+            "Success": False,
+            "Message": "Coupon not found"
+        }), 404
+
+    cursor.execute("DELETE FROM coupons WHERE id = ?", (coupon_id,))
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True, 
+        "Message" : "Coupon deleted successfully"
+    }), 200
+
+# PUT /api/coupons/<3>
+@app.put("/api/coupons/<int:coupon_id>")
+def update_coupon_by_id(coupon_id):
+    updated_coupon = request.get_json()
+
+    code = updated_coupon["code"]
+    discount = updated_coupon["discount"]
+
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM coupons WHERE id = ?", (coupon_id,))
+    coupon_db = cursor.fetchone()
+
+    if not coupon_db:
+        connection.close()
+        return jsonify({
+            "success": False, 
+            "message": "Coupon not found"
+        }), 404
+
+    cursor.execute("""
+        UPDATE coupons
+        SET code = ?, discount = ?
+        WHERE id = ?
+    """, (code, discount, coupon_id))
+
+    connection.commit()
+    connection.close()
+
+    return jsonify({
+        "Success": True,
+        "Message": "Coupon has been updated successfully"
+    }), 200
+
 # ---- Products ---- 
 # POST /api/products 
 @app.post("/api/products")
@@ -148,6 +209,63 @@ def create_product():
         "Success": True,
         "Message": "Product created successfully"
     }), 201
+
+
+# GET /api/products -> Return all the products records
+@app.get("/api/products")
+def get_products():
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM products")
+    products_db = cursor.fetchall()
+    connection.close()
+
+    product_list = []
+    for products in products_db:
+        print(products)
+        product_list.append(dict(products))
+
+    return jsonify({
+        "Success": True, 
+        "Message": "Products retrieved successfully",
+        "Data": product_list
+    }), 200
+
+# GET  /api/products/<2> -> Return a product by id
+# GET /api/products/<id> -> Return a product by id
+@app.get("/api/products/<int:product_id>")
+def get_product_by_id(product_id):
+
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT * FROM products WHERE id = ?",
+        (product_id,)
+    )
+
+    product_db = cursor.fetchone()
+
+    connection.close()
+
+    print(product_db)
+
+    if product_db is None:
+        return jsonify({
+            "Success": False,
+            "Message": "Product not found"
+        }), 404
+
+    product = dict(product_db)
+
+    return jsonify({
+        "Success": True,
+        "Message": "Product retrieved successfully",
+        "Data": product
+    }), 200
+
 
 
 init_db() # Call the function to initialize the database tables
